@@ -1,29 +1,74 @@
-from ometa.interp import TrampolinedGrammarInterpreter, _feed_me, decomposeGrammar
-from ometa.grammar import OMeta
-from parsley import makeGrammar
-
-
-grammar = OMeta("""
-a = anything{1}:a 'b' -> receiver.receive(a)
-""").parseGrammar('Grammar')
-
-# class _Receiver(object):
-#     def receive(self, x):
-#         print 'received', repr(x)
-# bindings = {'receiver': _Receiver()}
-# currentRule = 'a'
-# interp = TrampolinedGrammarInterpreter(grammar, rule=currentRule,
-#     callback=None, globals=bindings)
-
-# print interp.receive('1')
-
-from p2 import Interp, ParseError
-
-
-
+from interp import Interp, ParseError
+from matchers import exact, anything
 from twisted.trial.unittest import TestCase
 
+
 class TestInterp(TestCase):
+    """
+    a = anything{1} (
+        'b'
+        | ('c' | ('d' 'z'))
+        | 'x' ('y' | 'z')
+        | ('d' 'y')
+        | ('x' 'f')
+        )
+
+    # ab
+    # ac
+    # adz
+    # axy
+    # axz
+    # ady
+    # axf
+    """
+    xf_or = (
+        exact('x'),
+        (exact('f'), None, None),
+        None
+    )
+
+    dy_or = (
+        exact('d'),
+        (exact('y'), None, None),
+        (xf_or, 0)
+    )
+
+    z_or = (exact('z'), None, (dy_or, 1))
+    x_or = (
+        exact('x'),
+        (
+            exact('y'),
+            None,
+            (z_or, 0)
+        ),
+        (dy_or, 0)
+    )
+
+    d_or = (
+        exact('d'),
+        (
+            exact('z'), None, (x_or, 1)
+        ),
+        (x_or, 0)
+    )
+
+    c_or = (
+        exact('c'),
+        None,
+        (d_or, 0)
+    )
+
+    parseTree = (
+        anything(length=1),
+
+        (
+            exact('b'),
+            None,
+            (c_or, 0)
+        ),
+        None
+
+    )
 
     def test_parses(self):
         inputs = [
@@ -33,7 +78,7 @@ class TestInterp(TestCase):
             calls = []
             def _cb():
                 calls.append(True)
-            interp = Interp(grammar, _cb)
+            interp = Interp(self.parseTree, _cb)
             interp.receive(i)
             self.assertEqual(len(calls), 1)
 
@@ -45,7 +90,7 @@ class TestInterp(TestCase):
                 calls.append(True)
 
             with self.assertRaises(ParseError):
-                interp = Interp(grammar, _cb)
+                interp = Interp(self.parseTree, _cb)
                 interp.receive(i)
             self.assertEqual(len(calls), 0)
 
@@ -56,7 +101,7 @@ class TestInterp(TestCase):
             def _cb():
                 calls.append(True)
 
-            interp = Interp(grammar, _cb)
+            interp = Interp(self.parseTree, _cb)
             interp.receive(i)
             self.assertEqual(len(calls), 0)
 
@@ -68,7 +113,7 @@ class TestInterp(TestCase):
             def _cb():
                 calls.append(True)
 
-            interp = Interp(grammar, _cb)
+            interp = Interp(self.parseTree, _cb)
             interp.receive(i)
             self.assertEqual(len(calls), 1)
 
@@ -77,7 +122,7 @@ class TestInterp(TestCase):
         def _cb():
             calls.append(True)
 
-        interp = Interp(grammar, _cb)
+        interp = Interp(self.parseTree, _cb)
         interp.receive('a')
         self.assertEqual(len(calls), 0)
         interp.receive('x')
