@@ -1,4 +1,5 @@
 from interp import ParseError
+from characteristic import attributes
 
 class anything(object):
     def __init__(self, length):
@@ -24,3 +25,12 @@ class exact(object):
 
     def __repr__(self):
         return '<exact %s>' % (self._target, )
+
+
+@attributes(['matcher', 'success', 'failure'], defaults={'success': None, 'failure': None})
+class Node(object):
+    pass
+
+@attributes(['node', 'backtrack'], defaults={'backtrack': 0})
+class FailureNode(object):
+    pass

@@ -1,9 +1,8 @@
 from interp import Interp, ParseError
-from matchers import exact, anything
-from twisted.trial.unittest import TestCase
+from matchers import exact, anything, Node, FailureNode
+from util import TestBase
 
-
-class TestInterp(TestCase):
+class TestInterp(TestBase):
     """
     a = anything{1} (
         'b'
@@ -21,52 +20,50 @@ class TestInterp(TestCase):
     # ady
     # axf
     """
-    xf_or = (
-        exact('x'),
-        (exact('f'), None, None),
-        None
+    xf_or = Node(
+        matcher=exact('x'),
+        success=Node(matcher=exact('f'))
     )
 
-    dy_or = (
-        exact('d'),
-        (exact('y'), None, None),
-        (xf_or, 0)
+    dy_or = Node(
+        matcher=exact('d'),
+        success=Node(matcher=exact('y')),
+        failure=FailureNode(node=xf_or)
     )
 
-    z_or = (exact('z'), None, (dy_or, 1))
-    x_or = (
-        exact('x'),
-        (
-            exact('y'),
-            None,
-            (z_or, 0)
+    z_or = Node(
+        matcher=exact('z'),
+        failure=FailureNode(node=dy_or, backtrack=1)
+    )
+    x_or = Node(
+        matcher=exact('x'),
+        success=Node(
+            matcher=exact('y'),
+            failure=FailureNode(node=z_or)
         ),
-        (dy_or, 0)
+        failure=FailureNode(node=dy_or)
     )
 
-    d_or = (
-        exact('d'),
-        (
-            exact('z'), None, (x_or, 1)
+    d_or = Node(
+        matcher=exact('d'),
+        success=Node(
+            matcher=exact('z'),
+            failure=FailureNode(node=x_or, backtrack=1)
         ),
-        (x_or, 0)
+        failure=FailureNode(node=x_or)
     )
 
-    c_or = (
-        exact('c'),
-        None,
-        (d_or, 0)
+    c_or = Node(
+        matcher=exact('c'),
+        failure=FailureNode(node=d_or)
     )
 
-    parseTree = (
-        anything(length=1),
-
-        (
-            exact('b'),
-            None,
-            (c_or, 0)
-        ),
-        None
+    parseTree = Node(
+        matcher=anything(length=1),
+        success=Node(
+            matcher=exact('b'),
+            failure=FailureNode(node=c_or)
+        )
 
     )
 
@@ -129,3 +126,19 @@ class TestInterp(TestCase):
         self.assertEqual(len(calls), 0)
         interp.receive('z')
         self.assertEqual(len(calls), 1)
+
+    def test_orThenAnd(self):
+        """
+        a = ('b' | 'c') 'a'
+        """
+        aNode = Node(matcher=exact('a'))
+        cNode = Node(matcher=exact('c'), success=aNode)
+        parseTree = Node(
+            matcher=exact('b'),
+            success=aNode,
+            failure=FailureNode(node=cNode)
+        )
+        self.assertMatch(parseTree, 'ba')
+        self.assertMatch(parseTree, 'ca')
+        self.assertNoMatch(parseTree, 'bca')
+

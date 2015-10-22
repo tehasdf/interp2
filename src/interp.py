@@ -11,7 +11,9 @@ class Interp(object):
         self.callback = callback
 
     def next(self, tree):
-        self.current, self.onSuccess, self.onFailure = tree
+        self.current = tree.matcher
+        self.onSuccess = tree.success
+        self.onFailure = tree.failure
 
     def receive(self, data):
         self._data += data
@@ -27,7 +29,8 @@ class Interp(object):
                 move = self.current.receive(self._data[self._ix:])
             except ParseError:
                 if self.onFailure is not None:
-                    nexthandler, backtrack = self.onFailure
+                    nexthandler = self.onFailure.node
+                    backtrack = self.onFailure.backtrack
                     for _ in range(backtrack):
                         self._ix -= self.stack.pop()
                     self.next(nexthandler)
@@ -45,4 +48,3 @@ class Interp(object):
                 return
 
             self.next(self.onSuccess)
-
