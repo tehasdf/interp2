@@ -114,6 +114,23 @@ class TestCompiler(TestBase):
             self.assertMatch(parseTree, i)
         self.assertNoMatch(parseTree, 'bc')
 
+    def test_nestedOr(self):
+        source = """
+        a = 'u'
+            ('b'
+                | (('c' 'x')
+                    | ('z' ('f' | 'y') )
+                    )
+            )
+            'a'
+        """
+        parseTree = compileRule(getRule(source))
+        self.assertMatch(parseTree, 'uba')
+        self.assertMatch(parseTree, 'ucxa')
+        self.assertMatch(parseTree, 'uzfa')
+        self.assertMatch(parseTree, 'uzya')
+        self.assertNoMatch(parseTree, 'ubya')
+
     def test_needsBacktracking(self):
         source = """
         a = ('a' 'b') | ('a' 'c') | 'z'
@@ -130,3 +147,10 @@ class TestCompiler(TestBase):
         """
         parseTree = compileRule(getRule(source))
         self.assertMatch(parseTree, 'abcdez')
+
+    def test_name(self):
+        source = """
+        a = anything{1}:x
+        """
+        parseTree = compileRule(getRule(source))
+        self.assertMatch(parseTree, 'a')
