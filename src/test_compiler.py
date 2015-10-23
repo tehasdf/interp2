@@ -2,7 +2,7 @@ from ometa.interp import decomposeGrammar
 from ometa.grammar import OMeta
 from parsley import makeGrammar
 
-from matchers import anything, exact, Node, setRule, backtrack, setName
+from matchers import anything, exact, Node, setRule, backtrack, setName, digit, noop
 from interp import Interp, ParseError
 from util import TestBase
 
@@ -39,6 +39,8 @@ def orHandler(term):
 def _simpleRepeatHandler(num, rule, *args):
     if rule.data == 'anything':
         return Node(matcher=anything(length=int(num)))
+    elif rule.data == 'digit':
+        return Node(matcher=digit(length=int(num)))
     else:
         raise NotImplementedError()
 
@@ -73,12 +75,36 @@ def bindHandler(term):
     rule.success.append(setName(name=nameTerm.data))
     return rule
 
+def applyHandler(term):
+    return _simpleRepeatHandler(1, *term.args)
+
+def predicateHandler(term):
+    val = term.args[0]
+    if val.tag.name != 'Action':
+        raise NotImplementedError()
+
+    code = val.args[0].data
+    def pred(interp, rv):
+        if eval(code, interp.names):
+            return rv
+        else:
+            raise ParseError('failed predicate')
+    return Node(matcher=noop(), success=[pred])
+
+
+def manyHandler(term):
+    print 'asd', term
+
+
 handlers = {
     'Or': orHandler,
     'Repeat': repeatHandler,
     'And': andHandler,
     'Exactly': exactlyHandler,
-    'Bind': bindHandler
+    'Bind': bindHandler,
+    'Apply': applyHandler,
+    'Predicate': predicateHandler,
+    'Many': manyHandler
 }
 
 def compileRule(rule):
@@ -170,3 +196,35 @@ class TestCompiler(TestBase):
         i = Interp(parseTree, None)
         i.receive('a')
         self.assertEqual(i.names['x'], 'a')
+
+    def test_relatedRule(self):
+        source = """
+        a = 'a'
+        b = a 'b'
+        """
+        parseTree = compileRule(getRule(source))
+        self.assertMatch(parseTree, 'ab')
+
+    def test_relatedRule(self):
+        source = """
+        a = 'a'
+        b = a 'b'
+        """
+        parseTree = compileRule(getRule(source))
+        self.assertMatch(parseTree, 'ab')
+
+    def test_digit(self):
+        source = "a = digit"
+        parseTree = compileRule(getRule(source))
+        self.assertMatch(parseTree, '1')
+
+    def test_conditional(self):
+        source = "a = digit:x ?(x != '0')"
+        parseTree = compileRule(getRule(source))
+        self.assertMatch(parseTree, '1')
+        self.assertNoMatch(parseTree, 'a')
+
+    def test_anyLength(self):
+        source = "a = digit* anything:x"
+        parseTree = compileRule(getRule(source))
+        self.assertMatch(parseTree, '1a')

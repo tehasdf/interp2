@@ -11,6 +11,7 @@ class Interp(object):
         self._data = ''
         self.callback = callback
         self.ended = False
+        self.rv = None
 
     def next(self, node):
         self.current = node.matcher
@@ -29,7 +30,7 @@ class Interp(object):
                 break
 
             try:
-                move, rv = self.current.receive(self._data[self._ix:])
+                move, self.rv = self.current.receive(self._data[self._ix:], self.rv)
             except ParseError:
                 if self.onFailure:
                     for errback in self.onFailure:
@@ -47,7 +48,7 @@ class Interp(object):
             self.current = None
 
             for callback in self.onSuccess:
-                callback(self, rv)
+                self.rv = callback(self, self.rv)
 
 
             if self.current is None:
