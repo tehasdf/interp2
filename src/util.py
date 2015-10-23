@@ -18,7 +18,7 @@ def _numMatches(parseTree, data, name='a'):
     i = Interp(parseTree, _cb)
     try:
         i.receive(data)
-    except ParseError:
+    except ParseError as e:
         return 0
     return len(_calls)
 

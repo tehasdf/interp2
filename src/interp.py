@@ -7,8 +7,10 @@ class Interp(object):
         self.next(parseTree)
         self._ix = 0
         self.stack = []
+        self.names = {}
         self._data = ''
         self.callback = callback
+        self.ended = False
 
     def next(self, node):
         self.current = node.matcher
@@ -17,7 +19,8 @@ class Interp(object):
 
     def receive(self, data):
         self._data += data
-        self._tryParse()
+        if not self.ended:
+            self._tryParse()
 
     def _tryParse(self):
         while True:
@@ -26,11 +29,11 @@ class Interp(object):
                 break
 
             try:
-                move = self.current.receive(self._data[self._ix:])
+                move, rv = self.current.receive(self._data[self._ix:])
             except ParseError:
                 if self.onFailure:
                     for errback in self.onFailure:
-                        errback(self)
+                        errback(self, None)
                     continue
                 else:
                     raise
@@ -41,10 +44,14 @@ class Interp(object):
             self._ix += move
             self.stack.append(move)
 
-            if not self.onSuccess:
-                self.callback()
-                return
+            self.current = None
 
             for callback in self.onSuccess:
-                callback(self)
+                callback(self, rv)
 
+
+            if self.current is None:
+                if self.callback is not None:
+                    self.callback()
+                self.ended = True
+                return

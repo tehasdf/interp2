@@ -2,7 +2,7 @@ from ometa.interp import decomposeGrammar
 from ometa.grammar import OMeta
 from parsley import makeGrammar
 
-from matchers import anything, exact, Node, setRule, backtrack
+from matchers import anything, exact, Node, setRule, backtrack, setName
 from interp import Interp, ParseError
 from util import TestBase
 
@@ -11,7 +11,6 @@ def getSuccessNode(node):
     for cb in node.success:
         if isinstance(cb, setRule):
             return cb.node
-    raise ParseError('??? no cb')
 
 def _multipleAlternativesOr(alternatives):
     matchers = [compileRule(rule) for rule in alternatives]
@@ -55,8 +54,11 @@ def andHandler(term):
     elements = term.args[0].args
     matchers = [compileRule(rule) for rule in elements]
     for current_node, next_node in zip(matchers, matchers[1:]):
-        while current_node.success:
-            current_node = getSuccessNode(current_node)
+        while True:
+                success_node = getSuccessNode(current_node)
+                if success_node is None:
+                    break
+                current_node = success_node
         current_node.success.append(setRule(node=next_node))
     return matchers[0]
 
@@ -65,11 +67,18 @@ def exactlyHandler(term):
     target = target_tag.data
     return Node(matcher=exact(target))
 
+def bindHandler(term):
+    nameTerm, rule = term.args
+    rule = compileRule(rule)
+    rule.success.append(setName(name=nameTerm.data))
+    return rule
+
 handlers = {
     'Or': orHandler,
     'Repeat': repeatHandler,
     'And': andHandler,
-    'Exactly': exactlyHandler
+    'Exactly': exactlyHandler,
+    'Bind': bindHandler
 }
 
 def compileRule(rule):
@@ -158,4 +167,6 @@ class TestCompiler(TestBase):
         a = anything{1}:x
         """
         parseTree = compileRule(getRule(source))
-        self.assertMatch(parseTree, 'a')
+        i = Interp(parseTree, None)
+        i.receive('a')
+        self.assertEqual(i.names['x'], 'a')
