@@ -1,5 +1,5 @@
 from interp import ParseError
-from characteristic import attributes
+from characteristic import attributes, Attribute
 
 class anything(object):
     def __init__(self, length):
@@ -27,10 +27,20 @@ class exact(object):
         return '<exact %s>' % (self._target, )
 
 
-@attributes(['matcher', 'success', 'failure'], defaults={'success': None, 'failure': None})
+@attributes(['matcher',
+    Attribute('success', default_factory=list),
+    Attribute('failure', default_factory=list)])
 class Node(object):
     pass
 
-@attributes(['node', 'backtrack'], defaults={'backtrack': 0})
-class FailureNode(object):
-    pass
+
+@attributes(['node'])
+class setRule(object):
+    def __call__(self, interp):
+        interp.next(self.node)
+
+@attributes(['count'])
+class backtrack(object):
+    def __call__(self, interp):
+        for _ in range(self.count):
+            interp._ix -= interp.stack.pop()

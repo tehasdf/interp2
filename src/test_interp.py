@@ -1,5 +1,5 @@
 from interp import Interp, ParseError
-from matchers import exact, anything, Node, FailureNode
+from matchers import exact, anything, Node, setRule, backtrack
 from util import TestBase
 
 class TestInterp(TestBase):
@@ -22,50 +22,61 @@ class TestInterp(TestBase):
     """
     xf_or = Node(
         matcher=exact('x'),
-        success=Node(matcher=exact('f'))
+        success=[setRule(node=Node(matcher=exact('f')))]
     )
 
     dy_or = Node(
         matcher=exact('d'),
-        success=Node(matcher=exact('y')),
-        failure=FailureNode(node=xf_or)
+        success=[setRule(node=Node(matcher=exact('y')))],
+        failure=[setRule(node=xf_or)]
     )
 
     z_or = Node(
         matcher=exact('z'),
-        failure=FailureNode(node=dy_or, backtrack=1)
+        failure=[backtrack(count=1), setRule(node=dy_or)]
     )
+
     x_or = Node(
         matcher=exact('x'),
-        success=Node(
+        success=[setRule(node=Node(
             matcher=exact('y'),
-            failure=FailureNode(node=z_or)
-        ),
-        failure=FailureNode(node=dy_or)
+            failure=[setRule(node=z_or)]
+        ))],
+        failure=[setRule(node=dy_or)]
     )
 
     d_or = Node(
         matcher=exact('d'),
-        success=Node(
+        success=[setRule(node=Node(
             matcher=exact('z'),
-            failure=FailureNode(node=x_or, backtrack=1)
-        ),
-        failure=FailureNode(node=x_or)
+            failure=[backtrack(count=1), setRule(node=x_or)]
+        ))],
+        failure=[setRule(node=x_or)]
     )
 
     c_or = Node(
         matcher=exact('c'),
-        failure=FailureNode(node=d_or)
+        failure=[setRule(node=d_or)]
     )
 
     parseTree = Node(
         matcher=anything(length=1),
-        success=Node(
+        success=[setRule(node=Node(
             matcher=exact('b'),
-            failure=FailureNode(node=c_or)
-        )
+            failure=[setRule(node=c_or)]
+        ))]
 
     )
+    def test_simpleParse(self):
+        parseTree = Node(
+            matcher=anything(length=1)
+        )
+        calls = []
+        def _cb():
+            calls.append(True)
+        interp = Interp(parseTree, _cb)
+        interp.receive('a')
+        self.assertEqual(len(calls), 1)
 
     def test_parses(self):
         inputs = [
@@ -132,11 +143,11 @@ class TestInterp(TestBase):
         a = ('b' | 'c') 'a'
         """
         aNode = Node(matcher=exact('a'))
-        cNode = Node(matcher=exact('c'), success=aNode)
+        cNode = Node(matcher=exact('c'), success=[setRule(node=aNode)])
         parseTree = Node(
             matcher=exact('b'),
-            success=aNode,
-            failure=FailureNode(node=cNode)
+            success=[setRule(node=aNode)],
+            failure=[setRule(node=cNode)]
         )
         self.assertMatch(parseTree, 'ba')
         self.assertMatch(parseTree, 'ca')

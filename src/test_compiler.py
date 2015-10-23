@@ -2,24 +2,29 @@ from ometa.interp import decomposeGrammar
 from ometa.grammar import OMeta
 from parsley import makeGrammar
 
-from matchers import anything, exact, Node, FailureNode
+from matchers import anything, exact, Node, setRule, backtrack
 from interp import Interp, ParseError
 from util import TestBase
 
+
+def getSuccessNode(node):
+    for cb in node.success:
+        if isinstance(cb, setRule):
+            return cb.node
+    raise ParseError('??? no cb')
 
 def _multipleAlternativesOr(alternatives):
     matchers = [compileRule(rule) for rule in alternatives]
     for current_node, next_node in zip(matchers, matchers[1:]):
         count = 0
         while True:
-            if current_node.failure is None:
-                current_node.failure = FailureNode(node=next_node, backtrack=count)
-            else:
-                raise ValueError('???')
+            current_node.failure.append(setRule(node=next_node))
+            if count > 0:
+                current_node.failure.append(backtrack(count=count))
             count += 1
-            if current_node.success is None:
+            if not current_node.success:
                 break
-            current_node = current_node.success
+            current_node = getSuccessNode(current_node)
     return matchers[0]
 
 def orHandler(term):
@@ -50,9 +55,9 @@ def andHandler(term):
     elements = term.args[0].args
     matchers = [compileRule(rule) for rule in elements]
     for current_node, next_node in zip(matchers, matchers[1:]):
-        while current_node.success is not None:
-            current_node = current_node.success
-        current_node.success = next_node
+        while current_node.success:
+            current_node = getSuccessNode(current_node)
+        current_node.success.append(setRule(node=next_node))
     return matchers[0]
 
 def exactlyHandler(term):
