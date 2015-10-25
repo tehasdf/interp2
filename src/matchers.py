@@ -6,7 +6,7 @@ class anything(object):
         self.need = length
         self._received = ''
 
-    def receive(self, data):
+    def receive(self, data, previous):
         return self.need, data[:self.need]
 
     def __repr__(self):
@@ -35,7 +35,7 @@ class digit(object):
     def receive(self, data, previous):
         received = data[:self.need]
         if received.isdigit():
-            return self.need, len(received)
+            return self.need, received
         else:
             raise ParseError('not digit')
 

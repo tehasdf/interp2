@@ -12,11 +12,20 @@ def getSuccessNode(node):
         if isinstance(cb, setRule):
             return cb.node
 
+def getSuccessLeaf(node):
+    while True:
+        next_node = getSuccessNode(node)
+        if next_node is None:
+            break
+        node = next_node
+    return node
+
+
 def _multipleAlternativesOr(alternatives):
     matchers = [compileRule(rule) for rule in alternatives]
     for current_node, next_node in zip(matchers, matchers[1:]):
         count = 0
-        while True:
+        while current_node is not None:
             current_node.failure.append(setRule(node=next_node))
             if count > 0:
                 current_node.failure.append(backtrack(count=count))
@@ -72,7 +81,8 @@ def exactlyHandler(term):
 def bindHandler(term):
     nameTerm, rule = term.args
     rule = compileRule(rule)
-    rule.success.append(setName(name=nameTerm.data))
+    target_rule = getSuccessLeaf(rule)
+    target_rule.success.append(setName(name=nameTerm.data))
     return rule
 
 def applyHandler(term):
@@ -91,9 +101,31 @@ def predicateHandler(term):
             raise ParseError('failed predicate')
     return Node(matcher=noop(), success=[pred])
 
+from interp import Interp
+class many(object):
+    def __init__(self, rule):
+        self.need = rule.matcher.need
+        def _store(interp, rv):
+            self.gathered.append(rv)
+        rule.success.append(_store)
+        rule.success.append(setRule(node=rule))
+        self.rule = rule
+        self.interp = Interp(rule)
+        self.current = rule
+        self.gathered = []
+        self._ix = 0
+
+    def receive(self, data, previous):
+        try:
+            self.interp.receive(data)
+        except ParseError:
+            return self.interp._ix, self.gathered
+        return None, None
 
 def manyHandler(term):
-    print 'asd', term
+    nested = term.args[0]
+    rule = compileRule(nested)
+    return Node(matcher=many(rule))
 
 
 handlers = {
@@ -225,6 +257,19 @@ class TestCompiler(TestBase):
         self.assertNoMatch(parseTree, 'a')
 
     def test_anyLength(self):
-        source = "a = digit* anything:x"
+        source = "a = (digit*:y anything:x)"
+
         parseTree = compileRule(getRule(source))
-        self.assertMatch(parseTree, '1a')
+        i = Interp(parseTree, None)
+        i.receive('12a')
+        self.assertEqual(i.names['y'], ['1', '2'])
+        self.assertEqual(i.names['x'], 'a')
+
+    def test_manyOr(self):
+        source = """
+        a = (digit* 'x'):a | (digit* 'y'):a
+        """
+        parseTree = compileRule(getRule(source))
+        i = Interp(parseTree, None)
+        i.receive('12y')
+        self.assertEqual(i.names['a'], 'y')
