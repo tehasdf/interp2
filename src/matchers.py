@@ -1,4 +1,4 @@
-from interp import ParseError
+from interp import ParseError, Interp
 from characteristic import attributes, Attribute
 
 class anything(object):
@@ -38,6 +38,30 @@ class digit(object):
             return self.need, received
         else:
             raise ParseError('not digit')
+
+
+class many(object):
+    def __init__(self, rule):
+        rule.success.append(self._store)
+        rule.success.append(setRule(node=rule))
+
+        self.interp = Interp(rule)
+        self.gathered = []
+
+    @property
+    def need(self):
+        return self.interp.current.need
+
+    def receive(self, data, previous):
+        try:
+            self.interp.receive(data)
+        except ParseError:
+            return self.interp._ix, self.gathered
+        return None, None
+
+    def _store(self, interp, rv):
+        self.gathered.append(rv)
+
 
 class noop(object):
     # XXX get rid of that, compiler should instead append the cb to the previous node

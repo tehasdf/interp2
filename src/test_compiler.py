@@ -2,7 +2,7 @@ from ometa.interp import decomposeGrammar
 from ometa.grammar import OMeta
 from parsley import makeGrammar
 
-from matchers import anything, exact, Node, setRule, backtrack, setName, digit, noop
+from matchers import anything, exact, Node, setRule, backtrack, setName, digit, noop, many
 from interp import Interp, ParseError
 from util import TestBase
 
@@ -51,7 +51,8 @@ def _simpleRepeatHandler(num, rule, *args):
     elif rule.data == 'digit':
         return Node(matcher=digit(length=int(num)))
     else:
-        raise NotImplementedError()
+        print rule.data
+        raise NotImplementedError('_simpleRepeatHandler: unknown rule: %s' % (rule.data, ))
 
 
 def repeatHandler(repeat):
@@ -86,6 +87,7 @@ def bindHandler(term):
     return rule
 
 def applyHandler(term):
+    print 'apply', term
     return _simpleRepeatHandler(1, *term.args)
 
 def predicateHandler(term):
@@ -101,31 +103,16 @@ def predicateHandler(term):
             raise ParseError('failed predicate')
     return Node(matcher=noop(), success=[pred])
 
-from interp import Interp
-class many(object):
-    def __init__(self, rule):
-        self.need = rule.matcher.need
-        def _store(interp, rv):
-            self.gathered.append(rv)
-        rule.success.append(_store)
-        rule.success.append(setRule(node=rule))
-        self.rule = rule
-        self.interp = Interp(rule)
-        self.current = rule
-        self.gathered = []
-        self._ix = 0
-
-    def receive(self, data, previous):
-        try:
-            self.interp.receive(data)
-        except ParseError:
-            return self.interp._ix, self.gathered
-        return None, None
 
 def manyHandler(term):
     nested = term.args[0]
     rule = compileRule(nested)
     return Node(matcher=many(rule))
+
+def consumedHandler(term):
+    nested = compileRule(term.args[0])
+    leaf = getSuccessLeaf(nested)
+    print 'asd', leaf
 
 
 handlers = {
@@ -136,7 +123,8 @@ handlers = {
     'Bind': bindHandler,
     'Apply': applyHandler,
     'Predicate': predicateHandler,
-    'Many': manyHandler
+    'Many': manyHandler,
+    'ConsumedBy': consumedHandler
 }
 
 def compileRule(rule):
@@ -273,3 +261,13 @@ class TestCompiler(TestBase):
         i = Interp(parseTree, None)
         i.receive('12y')
         self.assertEqual(i.names['a'], 'y')
+
+    def test_netstrings(self):
+        source = """
+        nonzeroDigit = digit:x ?(x != '0')
+        digits = <'0' | nonzeroDigit digit*>:i -> int(i)
+
+        """
+        parseTree = compileRule(getRule(source))
+        i = Interp(parseTree, None)
+        i.receive('12y')
