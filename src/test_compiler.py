@@ -83,9 +83,9 @@ class Compiler(object):
 
     def _simpleRepeatHandler(self, num, rule, *args):
         if rule.data == 'anything':
-            return Node(matcher=anything(length=int(num)))
+            return Node(matcher=(anything, {'length': num}))
         elif rule.data == 'digit':
-            return Node(matcher=digit(length=int(num)))
+            return Node(matcher=(digit, {'length': num}))
         else:
             try:
                 return self.compileRule(self.getRule(rule.data))
@@ -104,15 +104,15 @@ class Compiler(object):
         elements = term.args[0].args
         matchers = [self.compileRule(rule) for rule in elements]
         for current_node, next_node in zip(matchers, matchers[1:]):
-            if isinstance(current_node.matcher, noop):
-                continue
+            # if issubclass(next_node.matcher[0], noop):
+            #     continue
             # while True:
             #         success_node = getSuccessNode(current_node)
             #         if success_node is None:
             #             break
             #         current_node = success_node
             for x in successExits(current_node):
-                if isinstance(next_node.matcher, noop):
+                if issubclass(next_node.matcher[0], noop):
                     x.success.extend(next_node.success)
                 else:
                     x.success.append(setRule(node=next_node))
@@ -122,7 +122,7 @@ class Compiler(object):
     def handle_Exactly(self, term):
         target_tag = term.args[0]
         target = target_tag.data
-        return Node(matcher=exact(target))
+        return Node(matcher=(exact, {'target': target}))
 
     def handle_Bind(self, term):
         nameTerm, rule = term.args
@@ -145,13 +145,13 @@ class Compiler(object):
                 return rv
             else:
                 raise ParseError('failed predicate')
-        return Node(matcher=noop(), success=[pred])
+        return Node(matcher=(noop, {}), success=[pred])
 
 
     def handle_Many(self, term):
         nested = term.args[0]
         rule = self.compileRule(nested)
-        return Node(matcher=many(rule))
+        return Node(matcher=(many, {'rule': rule}))
 
     def handle_ConsumedBy(self, term):
         nested = self.compileRule(term.args[0])
@@ -214,7 +214,7 @@ class Compiler(object):
         code = term.args[0].data
         def act(interp, rv):
             return eval(code, {}, interp.names)
-        return Node(matcher=noop(), success=[act])
+        return Node(matcher=(noop, {}), success=[act])
 
 
 def getParseTree(source, name=None):
@@ -359,15 +359,26 @@ class TestCompiler(TestBase):
         i.receive('0')
         self.assertEqual(i.names['i'], '0')
 
+    def test_consumedBy_double(self):
+        source = """
+        nonzeroDigit = digit:x ?(x != '0')
+        digits = <'0' | digit*>:x ':' <'0' | digit*>:y -> int(x) - int(y)
+        """
+        parseTree = getParseTree(source, name='digits')
+        i = Interp(parseTree, None)
+        i.receive('12:34:')
+        self.assertEqual(i.rv, 12 - 34)
+
     def test_netstrings(self):
         source = """
         nonzeroDigit = digit:x ?(x != '0')
         digits = <'0' | '1' '2' 'bar' |  nonzeroDigit digit*>:i -> int(i)
+        netstring = digits:length ':' <anything{length}>:string ',' -> string
         """
-        parseTree = getParseTree(source, name='digits')
+        parseTree = getParseTree(source, name='netstring')
         i = Interp(parseTree, None)
-        i.receive('123:')
-        self.assertEqual(i.rv, 123)
+        i.receive('3:asd,')
+        self.assertEqual(i.rv, 'asd')
 
     def test_action(self):
         source = """

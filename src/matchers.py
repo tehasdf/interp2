@@ -2,7 +2,11 @@ from interp import ParseError, Interp
 from characteristic import attributes, Attribute
 
 class anything(object):
-    def __init__(self, length):
+    def __init__(self, interp, length):
+        try:
+            length = int(length)
+        except ValueError:
+            length = interp.names[length.data]
         self.need = length
         self._received = ''
 
@@ -13,7 +17,7 @@ class anything(object):
         return '<anything %d>' % (self.need, )
 
 class exact(object):
-    def __init__(self, target):
+    def __init__(self, interp, target):
         self._target = target
         self.need = 1
 
@@ -34,7 +38,7 @@ class exact(object):
 
 class digit(object):
     # XXX needs _received
-    def __init__(self, length):
+    def __init__(self, interp, length):
         self.need = length
 
     def receive(self, data, previous):
@@ -46,7 +50,7 @@ class digit(object):
 
 
 class many(object):
-    def __init__(self, rule):
+    def __init__(self, interp, rule):
         rule.success.append(self._store)
         rule.success.append(setRule(node=rule))
 
@@ -71,6 +75,9 @@ class many(object):
 class noop(object):
     # XXX get rid of that, compiler should instead append the cb to the previous node
     need = 0
+    def __init__(self, interp):
+        pass
+
     def receive(self, data, previous):
         return 0, previous
 

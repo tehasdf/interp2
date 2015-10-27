@@ -14,7 +14,8 @@ class Interp(object):
         self.rv = None
 
     def next(self, node):
-        self.current = node.matcher
+        handler, kwargs = node.matcher
+        self.current = handler(self, **kwargs)
         self.onSuccess = node.success
         self.onFailure = node.failure
 
