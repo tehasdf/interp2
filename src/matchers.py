@@ -15,11 +15,16 @@ class anything(object):
 class exact(object):
     def __init__(self, target):
         self._target = target
-        self.need = len(target)
+        self.need = 1
 
     def receive(self, data, previous):
+        if len(data) < len(self._target):
+            if self._target.startswith(data):
+                return None, None
+            else:
+                raise ParseError('%r is not a prefix of %r' % (data, self._target))
         if data.startswith(self._target):
-            return self.need, self._target
+            return len(self._target), self._target
         else:
             raise ParseError('exact expected %r, got %r' % (self._target, data))
 

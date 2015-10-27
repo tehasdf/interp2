@@ -30,10 +30,10 @@ class Interp(object):
                 break
             try:
                 move, self.rv = self.current.receive(self._data[self._ix:], self.rv)
-            except ParseError:
+            except ParseError as e:
                 if self.onFailure:
                     for errback in self.onFailure:
-                        errback(self, None)
+                        self.rv = errback(self, self.rv)
                     continue
                 else:
                     raise
