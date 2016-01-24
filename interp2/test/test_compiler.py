@@ -3,9 +3,9 @@ from twisted.trial.unittest import TestCase
 from ometa.grammar import OMeta
 from parsley import makeGrammar
 
-from matchers import anything, exact, Node, setRule, backtrack, setName, digit, noop, many
-from interp import Interp, ParseError
-from util import TestBase
+from interp2.matchers import anything, exact, Node, setRule, backtrack, setName, digit, noop, many
+from interp2.interp import Interp, ParseError
+from interp2.util import TestBase
 
 
 def _transitionWhere(cbs):

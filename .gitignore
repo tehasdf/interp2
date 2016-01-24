@@ -1,1 +1,6 @@
 *.pyc
+venv
+_trial_temp
+.cache
+parsley
+__pycache__

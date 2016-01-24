@@ -1,6 +1,7 @@
-from interp import Interp, ParseError
-from matchers import exact, anything, Node, setRule, backtrack
-from util import TestBase
+from interp2.interp import Interp, ParseError
+from interp2.matchers import exact, anything, Node, setRule, backtrack
+from interp2.util import TestBase
+
 
 class TestInterp(TestBase):
     """
@@ -22,7 +23,7 @@ class TestInterp(TestBase):
     """
     xf_or = Node(
         matcher=exact('x'),
-        success=[setRule(node=Node(matcher=exact('f')))]
+        success=[setRule(node=Node(matcher=exact('f')))],
     )
 
     dy_or = Node(
