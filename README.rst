@@ -27,3 +27,4 @@ TODO
 * The compiler lives in the test module now... refactor the code
 * Otherwise it seems that it should work, needs packaging into something
   that can be used from within parsley protocols
+* benchmark it! :D
