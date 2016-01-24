@@ -1,0 +1,21 @@
+2015-10-27 17:38:20+0100 [-] Log opened.
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_action <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_actionAnd <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_actionOr <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_and <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_andor <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_anyLength <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_conditional <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_consumedBy <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_consumedBy_double <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_digit <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_doubleand <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_manyOr <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_moreBacktracking <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_name <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_nameOr <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_needsBacktracking <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_nestedOr <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_netstrings <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_orAnd <--
+2015-10-27 17:38:20+0100 [-] --> test_compiler.TestCompiler.test_relatedRule <--
