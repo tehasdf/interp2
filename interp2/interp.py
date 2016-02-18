@@ -3,15 +3,17 @@ class ParseError(Exception):
     pass
 
 class Interp(object):
-    def __init__(self, parseTree, callback=None):
+    def __init__(self, parseTree, callback=None, names=None):
         self.next(parseTree)
         self._ix = 0
         self.stack = []
-        self.names = {}
         self._data = ''
         self.callback = callback
         self.ended = False
         self.rv = None
+        if names is None:
+            names = {}
+        self.names = names
 
     def next(self, node):
         handler, kwargs = node.matcher
