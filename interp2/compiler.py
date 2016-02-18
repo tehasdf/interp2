@@ -104,15 +104,14 @@ class Compiler(object):
     def handle_And(self, term):
         elements = term.args[0].args
         matchers = [self.compileRule(rule) for rule in elements]
+        seen = []
         for current_node, next_node in zip(matchers, matchers[1:]):
-            # if issubclass(next_node.matcher[0], noop):
-            #     continue
-            # while True:
-            #         success_node = getSuccessNode(current_node)
-            #         if success_node is None:
-            #             break
-            #         current_node = success_node
             for x in successExits(current_node):
+                # XXX this is dirty - should successExits actually return the same
+                # node more than once?
+                if x in seen:
+                    continue
+                seen.append(x)
                 if issubclass(next_node.matcher[0], noop):
                     x.success.extend(next_node.success)
                 else:

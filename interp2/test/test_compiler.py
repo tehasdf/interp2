@@ -199,6 +199,37 @@ class TestCompiler(TestBase):
         result = i.receive('5')
         self.assertEqual(i.rv, 5)
 
+    def test_actionOnce(self):
+        """
+        The action is only called once, not more
+        """
+        source = """
+        a = '0':i -> call(i)
+        """
+        _calls = []
+        def cb(i):
+            _calls.append(i)
+
+        parseTree = getParseTree(source)
+        i = Interp(parseTree, None)
+        i.names['call'] = cb
+        result = i.receive('0')
+        self.assertEqual(_calls, ['0'])
+
+    def test_callAfterOr(self):
+        source = """
+        foo = ('b' | 'a') 'b'
+        receiveNetstring = foo:string -> cb(string)
+        """
+        _calls = []
+        def cb(i):
+            _calls.append(i)
+
+        parseTree = getParseTree(source, name='receiveNetstring')
+        i = Interp(parseTree, None)
+        i.names['cb'] = cb
+        i.receive('ab')
+        self.assertEqual(_calls, ['b'])
 
 
 class TestUtils(TestCase):
