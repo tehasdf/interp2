@@ -18,13 +18,13 @@ operation (`interp2.matchers.setRule`)
 Hacking
 -------
 
-To run the tests, simply run `py.test`
+To run the tests, simply run `py.test interp2`
 
 
 TODO
 ----
 
-* The compiler lives in the test module now... refactor the code
-* Otherwise it seems that it should work, needs packaging into something
-  that can be used from within parsley protocols
-* benchmark it! :D
+* refactor the thing
+* needs testing at the compiler level, with examining resulting nodes
+* rewrite the compiler as a compiler + optimizer
+* add more support for parsley syntax (the uncodumented "@" etc)
