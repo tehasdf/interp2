@@ -19,7 +19,7 @@ class NetstringsReceiver(object):
 
 
 class TestInterp(object):
-    def test_reuseParseTree(self):
+    def test_reuseParseTree_newInterp(self):
         receiver = NetstringsReceiver()
 
         compiler = Compiler(netstringsGrammar)
@@ -27,10 +27,24 @@ class TestInterp(object):
         parseTree = compiler.compileRule(rule)
 
         interp = Interp(parseTree, names={'receiver': receiver})
-        interp.receive('3:aaa,')
-        assert receiver.strings == ['aaa']
-        parseTree = compiler.compileRule(rule)
+        interp.receive('11:aaaaaaaaaaa,')
+        assert receiver.strings == ['aaaaaaaaaaa']
         interp = Interp(parseTree, names={'receiver': receiver})
         interp.receive('2:bb,')
 
-        assert receiver.strings == ['aaa', 'bb']
+        assert receiver.strings == ['aaaaaaaaaaa', 'bb']
+
+    def test_reuseMany(self):
+        receiver = NetstringsReceiver()
+
+        compiler = Compiler("""
+            a = 'a'*:string 'b' -> receiver.netstringReceived(string)
+        """)
+        rule = compiler.getRule('a')
+        parseTree = compiler.compileRule(rule)
+        interp = Interp(parseTree, names={'receiver': receiver})
+        interp.receive('aab')
+        assert receiver.strings == [['a', 'a']]
+        interp = Interp(parseTree, names={'receiver': receiver})
+        interp.receive('aaab')
+        assert receiver.strings == [['a', 'a'], ['a', 'a', 'a']]

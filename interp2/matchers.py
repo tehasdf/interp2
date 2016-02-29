@@ -51,8 +51,7 @@ class digit(object):
 
 class many(object):
     def __init__(self, interp, rule):
-        rule.success.append(self._store)
-        rule.success.append(setRule(node=rule))
+        rule.success = [self._store, setRule(node=rule)]
 
         self.interp = Interp(rule)
         self.gathered = []

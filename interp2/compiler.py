@@ -210,6 +210,7 @@ class Compiler(object):
 
         _f(nested)
         nested.success.insert(0, _c.clear())
+        nested.failure.insert(0, _c.clear())
         return nested
 
     def handle_Action(self, term):
