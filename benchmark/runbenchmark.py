@@ -8,30 +8,30 @@ from interp2.interp import Interp
 from interp2.protocol import makeProtocol as makeInterp2Protocol
 
 
-def makeShortAndSimple():
-    for num in range(20):
+def makeShortAndSimple(scale):
+    for num in range(20 * scale):
         for length in range(3, 6):
             yield '%d:%s,' % (length, 'a' * length)
 
-def makeManyShort():
-    for num in range(1000):
+def makeManyShort(scale):
+    for num in range(1000 * scale):
         yield '30:%s,' % ('a' * 30, )
 
 
-def makeLong():
-    for num in range(20):
+def makeLong(scale):
+    for num in range(20 * scale):
         for length in [1025, 2049, 16385]:
             yield '%d:%s,' % (length, 'a' * length)
 
-def makeManyLong():
-    for num in range(100):
+def makeManyLong(scale):
+    for num in range(100 * scale):
         yield '16385:%s,' % ('a' * 16385, )
 
 TESTS = [
-    ('short and simple', list(makeShortAndSimple())),
-    ('many short messages', list(makeManyShort())),
-    ('long messages', list(makeLong())),
-    ('many long messages', list(makeManyLong())),
+    ('short and simple', makeShortAndSimple),
+    ('many short messages', makeManyShort),
+    ('long messages', makeLong),
+    ('many long messages', makeManyLong),
 ]
 
 
@@ -79,10 +79,33 @@ def interp2Tests(messages):
         proto.dataReceived(message)
 
 
+def twistedTests(messages):
+    from twisted.protocols.basic import NetstringReceiver
+    class Proto(NetstringReceiver):
+        def stringReceived(self, string):
+            pass
+
+    proto = Proto()
+    transport = StringTransport()
+    proto.makeConnection(transport)
+    for message in messages:
+        proto.dataReceived(message)
+
+
 if __name__ == '__main__':
-    for name, impl in [('parsley', parsleyTests), ('interp2', interp2Tests)]:
-        for test_name, messages in TESTS:
-            start_time = datetime.now()
-            impl(messages)
-            took = datetime.now() - start_time
-            print '%s %s took %s' % (name, test_name, took)
+    scale = 1
+    NUMTESTS = 2
+    for name, impl in [
+                ('parsley', parsleyTests),
+                ('interp2', interp2Tests),
+                ('twisted', twistedTests)
+            ]:
+
+        for test_name, messagesFactory in TESTS:
+            for num in range(NUMTESTS):
+                messages = messagesFactory(scale)
+                start_time = datetime.now()
+                impl(messages)
+                took = datetime.now() - start_time
+                print '%s %s took %s' % (name, test_name, took)
+            print

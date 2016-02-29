@@ -6,8 +6,6 @@ test cases.
 The interesting case is long netstrings, because in that setup, parsley is
 terribly slow.
 
-Also needs testing vs a hand-crafted twisted netstrings protocol
-
 To run the benchmarks, simply do `python -m benchmark.runbenchmark`
 
 
