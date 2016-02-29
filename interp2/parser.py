@@ -18,8 +18,8 @@ class ParsleyCompatibleParser(object):
         # XXX this must also cache .compileRule, not just .getRule
         # but apparently some state is still held inside the parse tree?
         if name not in self._rules:
-            self._rules[name] = self.compiler.getRule(name)
-        return self.compiler.compileRule(self._rules[name])
+            self._rules[name] = self.compiler.compileRule(self.compiler.getRule(name))
+        return self._rules[name]
 
     def _setup(self):
         parseTree = self.getParseTree(self._receiver.currentRule)
