@@ -14,7 +14,11 @@ def getParseTree(source, name=None):
     return compiler.compileRule(compiler.getRule(name))
 
 
-class TestCompiler(TestBase):
+class TestFunctional(TestBase):
+    """
+    Functional tests for both the compiler and the interpreter - get the parse
+    tree and execute on an input
+    """
     def test_and(self):
         source = """
         a = 'b' 'c' 'de'
@@ -244,3 +248,61 @@ class TestUtils(TestCase):
         self.assertNotIn(n1, exits)
         self.assertIn(n2, exits)
         self.assertIn(n3, exits)
+
+
+class TestCompiler(object):
+    def test_simple(self):
+        """
+        A single token generates a node with no success or failure callbacks
+        """
+        tree = getParseTree("""
+        x = 'a'
+        """, name="x")
+
+        matcher, options = tree.matcher
+        assert matcher == exact
+        assert not tree.success
+        assert not tree.failure
+
+    def test_and(self):
+        """
+        """
+        tree = getParseTree("""
+        x = 'a' 'b'
+        """, name="x")
+
+        matcher, options = tree.matcher
+        assert matcher == exact
+        assert not tree.failure
+        assert len(tree.success) == 1
+
+        onSuccess = tree.success[0]
+        assert isinstance(onSuccess, setRule)
+
+        nextNode = onSuccess.node
+        nextMatcher, nextOpts = nextNode.matcher
+
+        assert nextMatcher == exact
+        assert not nextNode.success
+        assert not nextNode.failure
+
+    def test_and(self):
+        tree = getParseTree("""
+        x = 'a' 'b'
+        """, name="x")
+
+        matcher, options = tree.matcher
+        assert matcher == exact
+        assert not tree.failure
+        assert len(tree.success) == 1
+
+        onSuccess = tree.success[0]
+        assert isinstance(onSuccess, setRule)
+
+        nextNode = onSuccess.node
+        nextMatcher, nextOpts = nextNode.matcher
+
+        assert nextMatcher == exact
+        assert not nextNode.success
+        assert not nextNode.failure
+
