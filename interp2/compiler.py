@@ -215,6 +215,7 @@ class Compiler(object):
 
     def handle_Action(self, term):
         code = term.args[0].data
+        compiled = compile(code, '<string>', 'eval')
         def act(interp, rv):
-            return eval(code, {}, interp.names)
+            return eval(compiled, {}, interp.names)
         return Node(matcher=(noop, {}), success=[act])
